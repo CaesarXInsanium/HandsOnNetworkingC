@@ -25,7 +25,9 @@ int main(void) {
   printf("Configuring Local Address...\n");
   struct addrinfo hints;
   memset(&hints, 0, sizeof(hints));
-  hints.ai_family = AF_INET6;      // we prefer IPv6
+  hints.ai_family =
+      AF_INET6; // we prefer IPv6, but when we try access localhost from our
+                // browser using ipv4 it maps directly to an ipv6 address
   hints.ai_socktype = SOCK_STREAM; // open TCP connection
   hints.ai_flags = AI_PASSIVE;     // listen to any avalable network device
   struct addrinfo *bind_address;
@@ -41,6 +43,12 @@ int main(void) {
     return 1;
   }
   printf("Binding Socket to local Address...\n");
+
+  // disables IPV6 only and allows for usage of both versions
+  if (setsockopt(socket_listen, IPPROTO_IPV6, IPV6_V6ONLY, NULL,
+                 sizeof(NULL))) {
+    fprintf(stderr, "setsockopt() failed. (%d)\n", GetSocketErrno());
+  }
   if (bind(socket_listen, bind_address->ai_addr, bind_address->ai_addrlen)) {
     fprintf(stderr, "bind() failed. (%d)\n", GetSocketErrno());
     return EXIT_FAILURE;
@@ -78,7 +86,7 @@ int main(void) {
   // copies bytes received from the client request
   int bytes_received = recv(socket_client, request, 1024, 0);
   printf("Received %d bytes.\n", bytes_received);
-  printf("Request: %s\n", request);
+  printf("Request Received:\n%s\n", request);
 
   printf("Sending Response...\n");
   const char *response = "HTTP/1.1 200 OK\r\n"
@@ -86,7 +94,7 @@ int main(void) {
                          "Content-type: text/plain\r\n\r\n"
                          "Local time is: ";
   int bytes_sent = send(socket_client, response, strlen(response), 0);
-  printf("Sendt %d of %d bytes.\n", bytes_sent, (int)strlen(response));
+  printf("Sent %d of %d bytes.\n", bytes_sent, (int)strlen(response));
 
   time_t timer;
   time(&timer);
