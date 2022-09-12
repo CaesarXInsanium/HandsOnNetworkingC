@@ -23,6 +23,7 @@
 
 int main(void) {
   printf("Configuring Local Address...\n");
+  // describes the sort of connection we want
   struct addrinfo hints;
   memset(&hints, 0, sizeof(hints));
   hints.ai_family =
@@ -34,10 +35,14 @@ int main(void) {
   int status = getaddrinfo(0, "8080", &hints, &bind_address);
   printf("getaddrinfo() status: %d\n", status);
   printf("Creating Socket\n");
+
+  // file descripter for the adapter connection we receive
+  // is abtraction over end point in network communication
   SOCKET socket_listen;
   // loads the socket, this is actualy a file descriptor
   socket_listen = socket(bind_address->ai_family, bind_address->ai_socktype,
                          bind_address->ai_protocol);
+
   if (!IsValidSocket(socket_listen)) {
     fprintf(stderr, "socket() failed. (%d)\n", GetSocketErrno());
     return 1;
@@ -49,6 +54,7 @@ int main(void) {
                  sizeof(NULL))) {
     fprintf(stderr, "setsockopt() failed. (%d)\n", GetSocketErrno());
   }
+  // assigns socket ip address and port number
   if (bind(socket_listen, bind_address->ai_addr, bind_address->ai_addrlen)) {
     fprintf(stderr, "bind() failed. (%d)\n", GetSocketErrno());
     return EXIT_FAILURE;
@@ -67,6 +73,7 @@ int main(void) {
   socklen_t client_len = sizeof(client_address);
 
   // block program until connection is established
+  // gives file descriptor in order to read and write data in the stream
   SOCKET socket_client =
       accept(socket_listen, (struct sockaddr *)&client_address, &client_len);
   if (!IsValidSocket(socket_client)) {
